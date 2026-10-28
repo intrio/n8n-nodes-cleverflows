@@ -1,6 +1,6 @@
 {
   "name": "@cleverflows/n8n-nodes-cleverflows",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cleverflows building block for n8n: receive runs and agent tasks, report back, wait for approvals.",
   "license": "MIT",
   "keywords": [
