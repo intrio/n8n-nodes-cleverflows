@@ -50,7 +50,8 @@ const resultProperties: INodeProperties[] = [
 		name: 'resultJson',
 		type: 'json',
 		default: '{}',
-		description: 'Object with the result values, e.g. {{ $JSON.article }}',
+		// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-json
+		description: 'Object with the result values, e.g. {{ $json.article }}',
 		displayOptions: { show: { operation: ['complete'], resultSource: ['json'] } },
 	},
 ];

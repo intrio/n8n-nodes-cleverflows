@@ -16,7 +16,9 @@ export const contextProperty: INodeProperties = {
 	name: 'context',
 	type: 'json',
 	default: '={{ $json.cf }}',
-	description: 'The "cf" object from the Cleverflows Trigger. If nodes in between replace the item, use e.g. {{ $(\'Cleverflows Trigger\').item.JSON.cf }}.',
+	// n8n expressions are case-sensitive: $json, not $JSON
+	// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-json
+	description: 'The "cf" object from the Cleverflows Trigger. If nodes in between replace the item, use e.g. {{ $(\'Cleverflows Trigger\').item.json.cf }}.',
 };
 
 export function parseJsonParam(ctx: IExecuteFunctions, value: unknown, label: string, itemIndex: number): unknown {
