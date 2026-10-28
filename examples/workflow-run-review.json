@@ -1,0 +1,173 @@
+{
+  "name": "Cleverflows Baustein – Beispiel Workflow-Lauf mit Review",
+  "nodes": [
+    {
+      "id": "t1",
+      "name": "Cleverflows Trigger",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "cf-example-run",
+        "accept": "workflow_run",
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "c191c9a4-2f3b-59ee-8b05-e15247d51968"
+    },
+    {
+      "id": "c1",
+      "name": "Entwurf erstellen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Beispiel-Schritt: hier stünde die KI oder die eigentliche Arbeit.\n// Kontext (cf) und Werte immer mitgeben, damit spätere Knoten melden können.\nconst item = $input.first().json;\nconst topic = item.values?.topic ?? item.record?.title ?? 'Thema';\nconst feedback = item.feedback ? ` (überarbeitet: ${item.feedback})` : '';\nreturn [{ json: { cf: item.cf, values: item.values, draft: { title: `Entwurf: ${topic}`, content: `Text zu ${topic}${feedback}` } } }];"
+      }
+    },
+    {
+      "id": "w1",
+      "name": "Review",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsWait",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "waitFor": "review",
+        "title": "={{ $json.draft.title }}",
+        "checkpointKey": "draft_review",
+        "payload": "={{ JSON.stringify($json.draft) }}",
+        "limitWaitTime": true,
+        "maxHours": 48,
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "5fa03bf2-9566-507d-8d31-d72238849f8a"
+    },
+    {
+      "id": "d1",
+      "name": "Fertig melden",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -120
+      ],
+      "parameters": {
+        "operation": "complete",
+        "resultSource": "json",
+        "resultJson": "={{ JSON.stringify(Object.assign({}, $json.originalPayload, $json.editedPayload)) }}",
+        "message": "Freigegeben",
+        "options": {}
+      }
+    },
+    {
+      "id": "x1",
+      "name": "Abgelehnt",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        80
+      ],
+      "parameters": {
+        "operation": "cancel",
+        "message": "={{ 'Abgelehnt: ' + ($json.feedback || '') }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "f1",
+      "name": "Zeit abgelaufen",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        240
+      ],
+      "parameters": {
+        "operation": "fail",
+        "message": "Keine Antwort im Review",
+        "context": "={{ $json.cf }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cleverflows Trigger": {
+      "main": [
+        [
+          {
+            "node": "Entwurf erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entwurf erstellen": {
+      "main": [
+        [
+          {
+            "node": "Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review": {
+      "main": [
+        [
+          {
+            "node": "Fertig melden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Entwurf erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Abgelehnt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Zeit abgelaufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

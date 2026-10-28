@@ -1,0 +1,223 @@
+{
+  "name": "Cleverflows Baustein – Beispiel Agenten-Auftrag",
+  "nodes": [
+    {
+      "id": "t1",
+      "name": "Cleverflows Trigger",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "cf-example-agent",
+        "accept": "agent_task",
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "cbc63940-d940-5c05-ac60-df4ddf2aed7c"
+    },
+    {
+      "id": "p1",
+      "name": "Fortschritt",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "progress",
+        "progress": 30,
+        "message": "Analyse läuft",
+        "options": {
+          "memory": "[{\"key\":\"beispiel\",\"kind\":\"observation\",\"summary\":\"Beispiel-Beobachtung aus dem Baustein-Test\"}]"
+        }
+      }
+    },
+    {
+      "id": "q1",
+      "name": "Rückfrage",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsWait",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "waitFor": "question",
+        "title": "Welche Zielgruppe?",
+        "inputFields": "[{\"key\":\"audience\",\"label\":\"Zielgruppe\",\"type\":\"text\",\"required\":true}]",
+        "limitWaitTime": true,
+        "maxHours": 48,
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "dc6fb5d0-417f-57f1-8f87-9b5a2d6ab8c0"
+    },
+    {
+      "id": "a1",
+      "name": "Freigabe Veröffentlichen",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsWait",
+      "typeVersion": 1,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "waitFor": "approval",
+        "title": "={{ 'Für ' + $json.answers.audience + ' veröffentlichen?' }}",
+        "actionKey": "publish",
+        "payload": "={{ JSON.stringify({ audience: $json.answers.audience }) }}",
+        "limitWaitTime": true,
+        "maxHours": 48,
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "dfdbe9fd-4daa-55f4-8e1e-040dc38b2c84"
+    },
+    {
+      "id": "d1",
+      "name": "Fertig melden",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        940,
+        -120
+      ],
+      "parameters": {
+        "operation": "complete",
+        "resultSource": "json",
+        "resultJson": "={{ JSON.stringify({ rows: [{ seite: '/start', befund: 'Titel zu lang' }, { seite: '/kontakt', befund: 'ok' }] }) }}",
+        "message": "Fertig",
+        "options": {
+          "resultTitle": "Beispiel-Audit",
+          "resultType": "list"
+        }
+      }
+    },
+    {
+      "id": "x1",
+      "name": "Nicht veröffentlichen",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        940,
+        80
+      ],
+      "parameters": {
+        "operation": "cancel",
+        "message": "Veröffentlichung abgelehnt",
+        "options": {}
+      }
+    },
+    {
+      "id": "f1",
+      "name": "Keine Antwort",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        940,
+        240
+      ],
+      "parameters": {
+        "operation": "fail",
+        "message": "Keine Antwort erhalten",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cleverflows Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fortschritt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fortschritt": {
+      "main": [
+        [
+          {
+            "node": "Rückfrage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rückfrage": {
+      "main": [
+        [
+          {
+            "node": "Freigabe Veröffentlichen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Freigabe Veröffentlichen": {
+      "main": [
+        [
+          {
+            "node": "Fertig melden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nicht veröffentlichen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nicht veröffentlichen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,32 @@
+# Publishes the package to npm when a version tag (e.g. 0.1.1) is pushed.
+#
+# n8n requires community nodes to be published from GitHub Actions with an npm
+# provenance statement; provenance only works from a public repository. Auth is
+# npm Trusted Publishing (OIDC): on npmjs.com, package settings → Trusted
+# Publishers → GitHub Actions, this repository, workflow "publish.yml". No token.
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Tag must match package version
+        run: test "$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm publish --provenance --access public

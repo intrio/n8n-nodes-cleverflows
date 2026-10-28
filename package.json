@@ -1,0 +1,60 @@
+{
+  "name": "@cleverflows/n8n-nodes-cleverflows",
+  "version": "0.1.0",
+  "description": "Cleverflows building block for n8n: receive runs and agent tasks, report back, wait for approvals.",
+  "license": "MIT",
+  "keywords": [
+    "n8n-community-node-package",
+    "cleverflows"
+  ],
+  "main": "index.js",
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && cp nodes/Cleverflows/*.svg dist/nodes/Cleverflows/ && cp credentials/*.svg dist/credentials/",
+    "test": "npm run build && node --test test/*.test.js",
+    "lint": "n8n-node lint",
+    "prepublishOnly": "npm run lint && npm test"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/CleverflowsApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Cleverflows/CleverflowsTrigger.node.js",
+      "dist/nodes/Cleverflows/Cleverflows.node.js",
+      "dist/nodes/Cleverflows/CleverflowsWait.node.js"
+    ],
+    "strict": true
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "^0.54.4",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.32.0",
+    "n8n-workflow": "^2.16.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "author": {
+    "name": "intermedia",
+    "email": "info@intermedia.io"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/intrio/n8n-nodes-cleverflows#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/intrio/n8n-nodes-cleverflows.git"
+  },
+  "bugs": {
+    "url": "https://github.com/intrio/n8n-nodes-cleverflows/issues"
+  }
+}
