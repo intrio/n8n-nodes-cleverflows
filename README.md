@@ -6,7 +6,7 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 |---|---|
 | **Cleverflows Trigger** | Receives a workflow run or an agent task, checks the auth header, outputs `record`/`values`, `configValues`, `knowledge`, `connectionsByProvider`, agent `goal`/`instructions`/`actions`/`memory`, and `cf` (callback context). |
 | **Cleverflows** | Report Progress (agents), Complete (result), Fail, Cancel. Sets token, ids and `executionId`. |
-| **Cleverflows Wait** | Review, approval of an action (agents) or question (agents); parks the execution on its signed waiting URL and continues on Approved / Revise / Rejected / Timed Out (questions: Answered / Timed Out). Further review rounds get `<key>_2`, `<key>_3` … |
+| **Cleverflows Wait** | Review, approval of an action (agents) or question (agents); parks the execution on its signed waiting URL and continues with the answer in `decision` (`approved`, `revise`, `rejected`, `answered`, `timeout`) plus `feedback`, `editedPayload`, `answers`. Branch with a Switch on `{{ $json.decision }}`. One output on purpose: older n8n versions only pass resume data to the first output. Further review rounds get `<key>_2`, `<key>_3` … |
 
 ## Setup
 

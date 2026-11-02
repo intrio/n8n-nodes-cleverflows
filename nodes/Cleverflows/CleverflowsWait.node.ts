@@ -11,16 +11,11 @@ import { NodeConnectionTypes, NodeOperationError, WAIT_INDEFINITELY } from 'n8n-
 import { buildWaitRequest, checkAuth, extractContext, interpretResume, normalizeStart, type WaitFor } from './shared';
 import { contextProperty, parseJsonParam, readContext, sendCallback } from './node-helpers';
 
-// Output order per mode; must match the `outputs` expression below.
-const REVIEW_OUTPUTS = ['approved', 'revise', 'rejected', 'timeout'] as const;
-const QUESTION_OUTPUTS = ['answered', 'timeout'] as const;
-
-const outputsFor = (waitFor: WaitFor): readonly string[] => (waitFor === 'question' ? QUESTION_OUTPUTS : REVIEW_OUTPUTS);
-
-function route(waitFor: WaitFor, outcome: string, item: INodeExecutionData): INodeExecutionData[][] {
-	const names = outputsFor(waitFor);
-	return names.map((name) => (name === outcome ? [item] : []));
-}
+// One output for every answer, the item carries `decision` (approved, revise, rejected,
+// answered, timeout); branch with a Switch after this node. n8n before 2.4x resumes a
+// waiting node by passing the webhook data through to its first output only, so several
+// outputs would lose every answer except the first.
+const single = (item: INodeExecutionData): INodeExecutionData[][] => [[item]];
 
 // Cleverflows keeps one checkpoint per key and run. After "Revise" the flow
 // loops back here, so every further round gets its own key: draft_review,
@@ -42,9 +37,7 @@ export class CleverflowsWait implements INodeType {
 		description: 'Send a review, approval or question to Cleverflows and wait for the answer',
 		defaults: { name: 'Cleverflows Wait' },
 		inputs: [NodeConnectionTypes.Main],
-		outputs: `={{ $parameter.waitFor === 'question'
-			? [{ type: 'main', displayName: 'Answered' }, { type: 'main', displayName: 'Timed Out' }]
-			: [{ type: 'main', displayName: 'Approved' }, { type: 'main', displayName: 'Revise' }, { type: 'main', displayName: 'Rejected' }, { type: 'main', displayName: 'Timed Out' }] }}`,
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'cleverflowsApi', required: true }],
 		webhooks: [
 			{
@@ -56,6 +49,13 @@ export class CleverflowsWait implements INodeType {
 			},
 		],
 		properties: [
+			{
+				displayName:
+					'Continues with the answer in the field "decision": approved, revise, rejected, answered (questions) or timeout. Branch with a Switch node on the decision field.',
+				name: 'decisionNotice',
+				type: 'notice',
+				default: '',
+			},
 			{
 				displayName: 'Wait For',
 				name: 'waitFor',
@@ -133,7 +133,7 @@ export class CleverflowsWait implements INodeType {
 				type: 'boolean',
 				default: true,
 				description:
-					'Whether to stop waiting after a while and continue on "Timed Out". Cleverflows also expires open requests (reviews after 24 h by default).',
+					'Whether to stop waiting after a while and continue with decision "timeout". Cleverflows also expires open requests (reviews after 24 h by default).',
 			},
 			{
 				displayName: 'Max Wait (Hours)',
@@ -235,7 +235,7 @@ export class CleverflowsWait implements INodeType {
 		// Approvals of actions with rule "allowed" / "not allowed" are decided at once
 		if (waitFor === 'approval' && (response?.decision === 'approved' || response?.decision === 'rejected')) {
 			const outcome = response.decision === 'approved' ? 'approved' : 'rejected';
-			return route(waitFor, outcome, {
+			return single({
 				json: { ...item.json, decision: outcome, decidedBy: 'rule', reason: response.reason ?? null },
 				pairedItem: { item: 0 },
 			});
@@ -247,7 +247,7 @@ export class CleverflowsWait implements INodeType {
 			: WAIT_INDEFINITELY;
 		await this.putExecutionToWait(waitTill);
 		// Only used when the wait time runs out without an answer
-		return route(waitFor, 'timeout', { json: { ...item.json, decision: 'timeout' }, pairedItem: { item: 0 } });
+		return single({ json: { ...item.json, decision: 'timeout' }, pairedItem: { item: 0 } });
 	}
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
@@ -277,10 +277,10 @@ export class CleverflowsWait implements INodeType {
 			originalPayload: (body.originalPayload as IDataObject) ?? null,
 			resume: body,
 		};
-		const outcome = waitFor === 'question' ? 'answered' : decision.outcome;
+		if (waitFor === 'question') json.decision = 'answered';
 		return {
 			webhookResponse: { ok: true },
-			workflowData: route(waitFor, outcome, { json }),
+			workflowData: single({ json }),
 		};
 	}
 }
