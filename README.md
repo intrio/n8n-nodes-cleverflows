@@ -17,6 +17,11 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 
 Examples to import: [`examples/workflow-run-review.json`](examples/workflow-run-review.json), [`examples/agent-task.json`](examples/agent-task.json).
 
+## Expressions
+
+- Callback context when items were replaced: `{{ $('Cleverflows Trigger').item.json.cf }}`
+- Result JSON from a previous node: `{{ $json.article }}` (n8n expressions are case-sensitive)
+
 ## Publishing
 
 1. First version once by hand: `npm login`, then `npm publish --access public` in this folder (owner of the npm organisation `cleverflows`).
