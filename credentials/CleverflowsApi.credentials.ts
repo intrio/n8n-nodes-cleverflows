@@ -1,4 +1,10 @@
-import type { Icon, ICredentialType, INodeProperties } from 'n8n-workflow';
+import type {
+	IAuthenticateGeneric,
+	Icon,
+	ICredentialTestRequest,
+	ICredentialType,
+	INodeProperties,
+} from 'n8n-workflow';
 
 /**
  * The secret Cleverflows sends with every call to this automation platform
@@ -16,6 +22,13 @@ export class CleverflowsApi implements ICredentialType {
 	documentationUrl = 'https://github.com/intrio/n8n-nodes-cleverflows#readme';
 
 	properties: INodeProperties[] = [
+		{
+			displayName: 'Cleverflows URL',
+			name: 'baseUrl',
+			type: 'string',
+			default: 'https://app.cleverflows.io',
+			description: 'Address of your Cleverflows app, e.g. your own domain. Only used to test this credential.',
+		},
 		{
 			displayName: 'Authentication',
 			name: 'authType',
@@ -45,4 +58,20 @@ export class CleverflowsApi implements ICredentialType {
 			description: 'The token Cleverflows sends to your automation platform',
 		},
 	];
+
+	// Sent only by the credential test; the nodes compare incoming headers themselves
+	authenticate: IAuthenticateGeneric = {
+		type: 'generic',
+		properties: {
+			headers: { 'x-cleverflows-token': '={{$credentials.token}}' },
+		},
+	};
+
+	// Cleverflows answers 200 if the token belongs to an active automation setup
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: '={{$credentials.baseUrl.replace(/\\/$/, "")}}',
+			url: '/api/integrations/automation/verify',
+		},
+	};
 }

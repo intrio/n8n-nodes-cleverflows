@@ -1,12 +1,4 @@
-import type {
-	ICredentialsDecrypted,
-	ICredentialTestFunctions,
-	IDataObject,
-	IExecuteFunctions,
-	INodeCredentialTestResult,
-	INodeExecutionData,
-	INodeProperties,
-} from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import type { CallbackRequest, CfContext } from './shared';
 
@@ -52,17 +44,4 @@ export async function sendCallback(ctx: IExecuteFunctions, req: CallbackRequest,
 			message: 'Cleverflows did not accept the callback',
 		});
 	}
-}
-
-// Inbound credential: there is nothing to call, so only check that a token is set.
-// Cleverflows sends the same value with every start and resume, the nodes compare it.
-export async function cleverflowsApiTest(
-	this: ICredentialTestFunctions,
-	credential: ICredentialsDecrypted,
-): Promise<INodeCredentialTestResult> {
-	const data = credential.data ?? {};
-	if (data.authType !== 'none' && !data.token) {
-		return { status: 'Error', message: 'Token is missing' };
-	}
-	return { status: 'OK', message: 'Saved. Cleverflows sends this value with every start and resume.' };
 }

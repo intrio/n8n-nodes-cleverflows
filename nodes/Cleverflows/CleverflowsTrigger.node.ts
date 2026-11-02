@@ -7,7 +7,6 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes } from 'n8n-workflow';
 import { checkAuth, detectKind, normalizeStart } from './shared';
-import { cleverflowsApiTest } from './node-helpers';
 
 export class CleverflowsTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -21,7 +20,7 @@ export class CleverflowsTrigger implements INodeType {
 		defaults: { name: 'Cleverflows Trigger' },
 		inputs: [],
 		outputs: [NodeConnectionTypes.Main],
-		credentials: [{ name: 'cleverflowsApi', required: true, testedBy: 'cleverflowsApiTest' }],
+		credentials: [{ name: 'cleverflowsApi', required: true }],
 		webhooks: [
 			{
 				name: 'default',
@@ -83,8 +82,6 @@ export class CleverflowsTrigger implements INodeType {
 			},
 		],
 	};
-
-	methods = { credentialTest: { cleverflowsApiTest } };
 
 	// The webhook URL is entered in Cleverflows by hand, nothing to register remotely
 	webhookMethods = {

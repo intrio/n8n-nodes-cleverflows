@@ -9,7 +9,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError, WAIT_INDEFINITELY } from 'n8n-workflow';
 import { buildWaitRequest, checkAuth, extractContext, interpretResume, normalizeStart, type WaitFor } from './shared';
-import { cleverflowsApiTest, contextProperty, parseJsonParam, readContext, sendCallback } from './node-helpers';
+import { contextProperty, parseJsonParam, readContext, sendCallback } from './node-helpers';
 
 // Output order per mode; must match the `outputs` expression below.
 const REVIEW_OUTPUTS = ['approved', 'revise', 'rejected', 'timeout'] as const;
@@ -45,7 +45,7 @@ export class CleverflowsWait implements INodeType {
 		outputs: `={{ $parameter.waitFor === 'question'
 			? [{ type: 'main', displayName: 'Answered' }, { type: 'main', displayName: 'Timed Out' }]
 			: [{ type: 'main', displayName: 'Approved' }, { type: 'main', displayName: 'Revise' }, { type: 'main', displayName: 'Rejected' }, { type: 'main', displayName: 'Timed Out' }] }}`,
-		credentials: [{ name: 'cleverflowsApi', required: true, testedBy: 'cleverflowsApiTest' }],
+		credentials: [{ name: 'cleverflowsApi', required: true }],
 		webhooks: [
 			{
 				name: 'default',
@@ -185,8 +185,6 @@ export class CleverflowsWait implements INodeType {
 		],
 		usableAsTool: true,
 	};
-
-	methods = { credentialTest: { cleverflowsApiTest } };
 
 	// Resume URL is created per execution by n8n, nothing to register remotely
 	webhookMethods = {
