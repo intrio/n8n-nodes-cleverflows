@@ -8,6 +8,22 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 | **Cleverflows** | Report Progress (agents), Complete (result), Fail, Cancel. Sets token, ids and `executionId`. |
 | **Cleverflows Wait** | Review, approval of an action (agents) or question (agents); parks the execution on its signed waiting URL and continues with the answer in `decision` (`approved`, `revise`, `rejected`, `answered`, `timeout`) plus `feedback`, `editedPayload`, `answers`. Branch with a Switch on `{{ $json.decision }}`. One output on purpose: older n8n versions only pass resume data to the first output. Further review rounds get `<key>_2`, `<key>_3` … |
 
+## Upgrading to 0.1.5
+
+**Breaking change:** Cleverflows Wait now has **one** output instead of four (Approved, Revise, Rejected, Timed Out). Older n8n versions (e.g. 2.9) only pass the answer to the first output, so the other branches were lost silently.
+
+After updating, existing flows keep only the connection of the former *Approved* output; the connections of *Revise*, *Rejected* and *Timed Out* are removed. Add a **Switch** node after each Cleverflows Wait node, with rules on `{{ $json.decision }}`:
+
+| Rule (`decision` equals) | Connect to what was on |
+|---|---|
+| `approved` | Approved |
+| `revise` | Revise |
+| `rejected` | Rejected |
+| `timeout` | Timed Out |
+| `answered` (questions) | Answered |
+
+The bundled examples (`examples/`) already use this pattern.
+
 ## Setup
 
 1. Install the package (Settings → Community Nodes, once published; until then `npm pack` here and `npm install <tgz>` in `~/.n8n/nodes`, then restart n8n).
