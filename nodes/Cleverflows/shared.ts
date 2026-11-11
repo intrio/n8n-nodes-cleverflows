@@ -260,7 +260,7 @@ function clampProgress(p: unknown): number | undefined {
 	return Math.max(0, Math.min(100, Math.round(p)));
 }
 
-export type WaitFor = 'review' | 'approval' | 'question';
+export type WaitFor = 'review' | 'approval' | 'question' | 'form';
 
 export interface WaitInput {
 	title: string;
@@ -275,6 +275,8 @@ export interface WaitInput {
 	actionLabel?: string;
 	/** Agent question: fields the human fills in */
 	inputFields?: unknown[];
+	/** Form (workflow runs and agents): definition per integrations/SPEC.md 3.1 */
+	form?: Obj;
 	resultType?: string;
 	resultSummary?: string;
 	memory?: unknown[];
@@ -284,8 +286,28 @@ export interface WaitInput {
 /** Callback that opens a review / approval / question and names the URL to resume on. */
 export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: WaitFor, resumeUrl: string, input: WaitInput): CallbackRequest {
 	const c = requireContext(cf);
+	if (waitFor === 'form' && (!input.form || !Array.isArray((input.form as Obj).fields) || ((input.form as Obj).fields as unknown[]).length === 0)) {
+		throw new Error('The form needs at least one field in "fields".');
+	}
+	if (c.kind === 'workflow_run' && waitFor === 'form') {
+		// A form is a checkpoint that asks for answers instead of a review
+		return baseRequest(
+			c,
+			{
+				status: 'checkpoint',
+				checkpointKey: input.checkpointKey || 'form',
+				checkpointTitle: input.title,
+				checkpointDescription: input.description || undefined,
+				checkpointPayload: input.payload ?? {},
+				checkpointForm: input.form,
+				resumeWebhookUrl: resumeUrl,
+				...(input.expiresInMinutes != null ? { checkpointExpiresInMinutes: input.expiresInMinutes } : {}),
+			},
+			input.executionId,
+		);
+	}
 	if (c.kind === 'workflow_run') {
-		if (waitFor !== 'review') throw new Error('Workflow runs only support "Review" (checkpoint). Approvals of actions and questions exist for agent tasks.');
+		if (waitFor !== 'review') throw new Error('Workflow runs support "Review" and "Form". Approvals of actions and questions exist for agent tasks.');
 		return baseRequest(
 			c,
 			{
@@ -308,6 +330,9 @@ export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: Wait
 	};
 	if (waitFor === 'question') {
 		return baseRequest(c, { type: 'question', ...common, inputFields: input.inputFields ?? [] }, input.executionId);
+	}
+	if (waitFor === 'form') {
+		return baseRequest(c, { type: 'question', ...common, form: input.form, ...(input.payload && Object.keys(input.payload).length ? { payload: input.payload } : {}) }, input.executionId);
 	}
 	if (waitFor === 'approval') {
 		return baseRequest(
@@ -335,7 +360,8 @@ export function interpretResume(body: Obj): { outcome: ResumeOutcome; feedback: 
 	const feedback = str(body.feedback);
 	const edited = isObj(body.editedPayload) ? body.editedPayload : null;
 	if (body.type === 'answer') {
-		return { outcome: 'answered', feedback, edited, response: isObj(body.response) ? body.response : {} };
+		const answers = isObj(body.answers) ? body.answers : isObj(body.response) ? body.response : {};
+		return { outcome: 'answered', feedback, edited, response: answers };
 	}
 	const decision = str(body.decision) ?? str(body.action);
 	if (decision === 'approve') return { outcome: 'approved', feedback, edited, response: null };

@@ -1,0 +1,243 @@
+{
+  "name": "Cleverflows Baustein – Beispiel Workflow-Lauf mit Formular",
+  "nodes": [
+    {
+      "id": "t1",
+      "name": "Cleverflows Trigger",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "cf-example-form-run",
+        "accept": "workflow_run",
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "30ef7e93-12e7-5d06-b066-6f09280a1037"
+    },
+    {
+      "id": "w1",
+      "name": "Formular",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsWait",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "waitFor": "form",
+        "title": "Angebot bestätigen",
+        "checkpointKey": "offer_form",
+        "form": "{\n  \"title\": \"Angebot bestätigen\",\n  \"description\": \"Bitte prüfe das Angebot und ergänze die Angaben für den Newsletter.\",\n  \"recipient\": \"customer\",\n  \"remindAfterMinutes\": 1440,\n  \"expiresInMinutes\": 4320,\n  \"submitLabel\": \"Bestätigen\",\n  \"fields\": [\n    {\n      \"key\": \"price_ok\",\n      \"label\": \"Preis von 1.200 EUR bestätigt\",\n      \"type\": \"boolean\",\n      \"required\": true\n    },\n    {\n      \"key\": \"topics\",\n      \"label\": \"Themen für den Newsletter\",\n      \"type\": \"multiselect\",\n      \"options\": [\n        \"Frühling\",\n        \"Veranstaltungen\",\n        \"Team\"\n      ],\n      \"min\": 1,\n      \"max\": 2,\n      \"required\": true\n    },\n    {\n      \"key\": \"tone\",\n      \"label\": \"Ton\",\n      \"type\": \"select\",\n      \"options\": [\n        {\n          \"value\": \"du\",\n          \"label\": \"Du\"\n        },\n        {\n          \"value\": \"sie\",\n          \"label\": \"Sie\"\n        }\n      ],\n      \"default\": \"du\"\n    },\n    {\n      \"key\": \"start\",\n      \"label\": \"Versand ab\",\n      \"type\": \"date\",\n      \"min\": \"2026-11-01\"\n    },\n    {\n      \"key\": \"budget\",\n      \"label\": \"Budget für Anzeigen (EUR)\",\n      \"type\": \"number\",\n      \"min\": 0,\n      \"max\": 10000\n    },\n    {\n      \"key\": \"website\",\n      \"label\": \"Landingpage\",\n      \"type\": \"url\"\n    },\n    {\n      \"key\": \"notes\",\n      \"label\": \"Hinweise\",\n      \"type\": \"textarea\",\n      \"maxLength\": 2000,\n      \"help\": \"Alles, was wir beim Schreiben wissen sollten.\"\n    },\n    {\n      \"key\": \"briefing\",\n      \"label\": \"Briefing (PDF)\",\n      \"type\": \"file\",\n      \"accept\": [\n        \"application/pdf\"\n      ],\n      \"maxSizeMb\": 10\n    }\n  ]\n}",
+        "formContext": "={{ JSON.stringify({ angebot: 'Newsletter-Paket', preis: '1.200 EUR' }) }}",
+        "limitWaitTime": true,
+        "maxHours": 96,
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "30432e89-7c0e-5569-a2b9-f142a6a0067f"
+    },
+    {
+      "id": "7a2ea1da-50df-563e-896f-1f800167a0ec",
+      "name": "Formular: Antwort",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4e71632b-54ed-548b-ace9-01f5b9867a26",
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "answered",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "answered"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "31487c96-eb61-5f7b-ba12-d958c9ea0819",
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "rejected"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "aee9499e-7fb8-5711-8ac9-f61dc08ab208",
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "timeout",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "timeout"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d1",
+      "name": "Fertig melden",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -140
+      ],
+      "parameters": {
+        "operation": "complete",
+        "resultSource": "json",
+        "resultJson": "={{ JSON.stringify({ themen: $json.answers.topics.join(', '), ton: $json.answers.tone, hinweise: $json.answers.notes, briefing: $json.answers.briefing ? $json.answers.briefing.url : null }) }}",
+        "message": "Formular beantwortet",
+        "options": {}
+      }
+    },
+    {
+      "id": "x1",
+      "name": "Abgelehnt",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        40
+      ],
+      "parameters": {
+        "operation": "cancel",
+        "message": "={{ 'Abgelehnt: ' + ($json.feedback || '') }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "f1",
+      "name": "Keine Antwort",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "operation": "fail",
+        "message": "Formular nicht beantwortet",
+        "context": "={{ $json.cf }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cleverflows Trigger": {
+      "main": [
+        [
+          {
+            "node": "Formular",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formular": {
+      "main": [
+        [
+          {
+            "node": "Formular: Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formular: Antwort": {
+      "main": [
+        [
+          {
+            "node": "Fertig melden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Abgelehnt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

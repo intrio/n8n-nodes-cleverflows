@@ -104,7 +104,7 @@ test('builds wait requests', () => {
 	assert.equal(cp.body.checkpointKey, 'draft');
 	assert.equal(cp.body.resumeWebhookUrl, 'https://n8n.test/webhook-waiting/9?signature=s');
 	assert.equal(cp.body.checkpointExpiresInMinutes, 0);
-	assert.throws(() => s.buildWaitRequest(run, 'question', 'u', { title: 'Q' }), /only support "Review"/);
+	assert.throws(() => s.buildWaitRequest(run, 'question', 'u', { title: 'Q' }), /support "Review" and "Form"/);
 
 	const task = s.extractContext(taskStart);
 	const ap = s.buildWaitRequest(task, 'approval', 'u', { title: 'Publish?', actionKey: 'publish', payload: { a: 1 } });
@@ -116,6 +116,23 @@ test('builds wait requests', () => {
 	assert.deepEqual(rv.body.result.content, { c: 1 });
 });
 
+test('builds form requests (workflow and agent)', () => {
+	const form = { recipient: 'agency', fields: [{ key: 'ok', label: 'OK?', type: 'boolean', required: true }] };
+	const run = s.extractContext(runStart);
+	const cp = s.buildWaitRequest(run, 'form', 'https://n8n.test/webhook-waiting/9', { title: 'Confirm', form, checkpointKey: 'price', payload: { price: 10 } });
+	assert.equal(cp.body.status, 'checkpoint');
+	assert.equal(cp.body.checkpointKey, 'price');
+	assert.deepEqual(cp.body.checkpointForm, form);
+	assert.deepEqual(cp.body.checkpointPayload, { price: 10 });
+	const task = s.extractContext(taskStart);
+	const q = s.buildWaitRequest(task, 'form', 'u', { title: 'Confirm', form });
+	assert.equal(q.body.type, 'question');
+	assert.deepEqual(q.body.form, form);
+	assert.equal(q.body.payload, undefined);
+	assert.throws(() => s.buildWaitRequest(task, 'form', 'u', { title: 'x', form: { fields: [] } }), /at least one field/);
+	assert.throws(() => s.buildWaitRequest(task, 'form', 'u', { title: 'x' }), /at least one field/);
+});
+
 test('interprets resume bodies', () => {
 	assert.equal(s.interpretResume({ action: 'approve', decision: 'approve' }).outcome, 'approved');
 	assert.equal(s.interpretResume({ action: 'image' }).outcome, 'revise');
@@ -124,6 +141,8 @@ test('interprets resume bodies', () => {
 	assert.equal(r.feedback, 'shorter');
 	assert.equal(s.interpretResume({ type: 'decision', decision: 'reject' }).outcome, 'rejected');
 	assert.deepEqual(s.interpretResume({ type: 'answer', response: { a: '1' } }).response, { a: '1' });
+	assert.deepEqual(s.interpretResume({ type: 'answer', action: 'answer', answers: { ok: true }, response: { ok: true } }).response, { ok: true });
+	assert.equal(s.interpretResume({ type: 'answer', action: 'answer', answers: { ok: true } }).outcome, 'answered');
 	assert.throws(() => s.interpretResume({}), /Unknown decision/);
 });
 

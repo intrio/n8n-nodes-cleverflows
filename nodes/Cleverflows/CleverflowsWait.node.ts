@@ -20,8 +20,9 @@ const single = (item: INodeExecutionData): INodeExecutionData[][] => [[item]];
 // Cleverflows keeps one checkpoint per key and run. After "Revise" the flow
 // loops back here, so every further round gets its own key: draft_review,
 // draft_review_2, draft_review_3 …
-function checkpointKeyFor(ctx: IExecuteFunctions): string {
-	const base = (ctx.getNodeParameter('checkpointKey', 0, 'review') as string) || 'review';
+function checkpointKeyFor(ctx: IExecuteFunctions, waitFor: WaitFor): string {
+	const fallback = waitFor === 'form' ? 'form' : 'review';
+	const base = (ctx.getNodeParameter('checkpointKey', 0, fallback) as string) || fallback;
 	const runIndex = Number(ctx.evaluateExpression('{{ $runIndex }}', 0)) || 0;
 	return runIndex > 0 ? `${base}_${runIndex + 1}` : base;
 }
@@ -34,7 +35,7 @@ export class CleverflowsWait implements INodeType {
 		group: ['organization'],
 		version: 1,
 		subtitle: '={{ $parameter.waitFor }}',
-		description: 'Send a review, approval or question to Cleverflows and wait for the answer',
+		description: 'Send a review, approval, question or form to Cleverflows and wait for the answer',
 		defaults: { name: 'Cleverflows Wait' },
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
@@ -51,7 +52,7 @@ export class CleverflowsWait implements INodeType {
 		properties: [
 			{
 				displayName:
-					'Continues with the answer in the field "decision": approved, revise, rejected, answered (questions) or timeout. Branch with a Switch node on the decision field.',
+					'Continues with the answer in the field "decision": approved, revise, rejected, answered (questions and forms) or timeout. Form answers are in the field answers. Branch with a Switch node on the decision field.',
 				name: 'decisionNotice',
 				type: 'notice',
 				default: '',
@@ -72,7 +73,12 @@ export class CleverflowsWait implements INodeType {
 						value: 'approval',
 						description: 'The rule of the action in Cleverflows decides: allowed and not allowed answer at once',
 					},
-					{ name: 'Question (Agent)', value: 'question', description: 'A human fills in fields' },
+					{
+						name: 'Form',
+						value: 'form',
+						description: 'Workflow run or agent task: a human fills in a form (text, number, date, choice, yes/no, link, file)',
+					},
+					{ name: 'Question (Agent)', value: 'question', description: 'A human fills in simple fields (older format, prefer Form)' },
 				],
 				default: 'review',
 			},
@@ -98,8 +104,8 @@ export class CleverflowsWait implements INodeType {
 				type: 'string',
 				default: 'review',
 				description:
-					'Workflow runs: one key per review step, e.g. draft_review or image_review. Further rounds after "Revise" get _2, _3 … appended.',
-				displayOptions: { show: { waitFor: ['review'] } },
+					'Workflow runs: one key per review or form step, e.g. draft_review or image_review. Further rounds after "Revise" get _2, _3 … appended.',
+				displayOptions: { show: { waitFor: ['review', 'form'] } },
 			},
 			{
 				displayName: 'Content to Review',
@@ -109,6 +115,25 @@ export class CleverflowsWait implements INodeType {
 				description:
 					'Shown to the reviewer. Workflow runs: e.g. {"title":"…","teaser":"…","content":"…"}; edited values come back as editedPayload.',
 				displayOptions: { show: { waitFor: ['review', 'approval'] } },
+			},
+			{
+				displayName: 'Form',
+				name: 'form',
+				type: 'json',
+				default:
+					'{\n  "recipient": "customer",\n  "fields": [\n    { "key": "price_ok", "label": "Price confirmed", "type": "boolean", "required": true },\n    { "key": "notes", "label": "Notes", "type": "textarea" }\n  ]\n}',
+				description:
+					'Field types: text, textarea, number, date, select, multiselect, boolean (yes/no), URL (written in lowercase), file. Recipient: customer (default) or agency. Answers come back in the field answers. See the README for all properties.',
+				required: true,
+				displayOptions: { show: { waitFor: ['form'] } },
+			},
+			{
+				displayName: 'Context (Optional)',
+				name: 'formContext',
+				type: 'json',
+				default: '{}',
+				description: 'Shown read-only above the form, e.g. the draft the questions are about',
+				displayOptions: { show: { waitFor: ['form'] } },
 			},
 			{
 				displayName: 'Action Key',
@@ -218,9 +243,14 @@ export class CleverflowsWait implements INodeType {
 		const req = buildWaitRequest(cf, waitFor, resumeUrl, {
 			title: this.getNodeParameter('title', 0) as string,
 			description: this.getNodeParameter('description', 0, '') as string,
-			checkpointKey: waitFor === 'review' ? checkpointKeyFor(this) : undefined,
+			checkpointKey: waitFor === 'review' || waitFor === 'form' ? checkpointKeyFor(this, waitFor) : undefined,
 			payload:
-				waitFor === 'question' ? undefined : (parseJsonParam(this, this.getNodeParameter('payload', 0, '{}'), 'Content to Review', 0) as IDataObject),
+				waitFor === 'question'
+					? undefined
+					: waitFor === 'form'
+						? (parseJsonParam(this, this.getNodeParameter('formContext', 0, '{}'), 'Context', 0) as IDataObject)
+						: (parseJsonParam(this, this.getNodeParameter('payload', 0, '{}'), 'Content to Review', 0) as IDataObject),
+			form: waitFor === 'form' ? (parseJsonParam(this, this.getNodeParameter('form', 0), 'Form', 0) as IDataObject) : undefined,
 			actionKey: waitFor === 'approval' ? (this.getNodeParameter('actionKey', 0) as string) : undefined,
 			actionLabel: options.actionLabel as string | undefined,
 			inputFields:
@@ -277,7 +307,8 @@ export class CleverflowsWait implements INodeType {
 			originalPayload: (body.originalPayload as IDataObject) ?? null,
 			resume: body,
 		};
-		if (waitFor === 'question') json.decision = 'answered';
+		// Questions and forms continue with "answered"; a declined form comes back as "rejected"
+		if (waitFor === 'question' || (waitFor === 'form' && decision.outcome === 'answered')) json.decision = 'answered';
 		return {
 			webhookResponse: { ok: true },
 			workflowData: single({ json }),

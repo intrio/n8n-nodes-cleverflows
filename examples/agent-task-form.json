@@ -1,0 +1,198 @@
+{
+  "name": "Cleverflows Baustein – Beispiel Agenten-Auftrag mit Formular",
+  "nodes": [
+    {
+      "id": "t1",
+      "name": "Cleverflows Trigger",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "cf-example-form-agent",
+        "accept": "agent_task",
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "86f4c201-edf4-5235-8ab5-abb9aefc6038"
+    },
+    {
+      "id": "w1",
+      "name": "Formular",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflowsWait",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "waitFor": "form",
+        "title": "Keywords auswählen",
+        "form": "{\n  \"title\": \"Keywords auswählen\",\n  \"recipient\": \"agency\",\n  \"fields\": [\n    {\n      \"key\": \"keywords\",\n      \"label\": \"Keywords für die nächsten Beiträge\",\n      \"type\": \"multiselect\",\n      \"options\": [\n        \"hotel asperg\",\n        \"wellness wochenende\",\n        \"tagungshotel ludwigsburg\"\n      ],\n      \"min\": 1,\n      \"required\": true\n    },\n    {\n      \"key\": \"extra\",\n      \"label\": \"Weiteres Keyword (optional)\",\n      \"type\": \"text\",\n      \"maxLength\": 80\n    },\n    {\n      \"key\": \"deadline\",\n      \"label\": \"Spätestens fertig bis\",\n      \"type\": \"date\"\n    }\n  ]\n}",
+        "formContext": "{}",
+        "limitWaitTime": true,
+        "maxHours": 48,
+        "options": {}
+      },
+      "credentials": {
+        "cleverflowsApi": {
+          "id": "cf-cred",
+          "name": "Cleverflows"
+        }
+      },
+      "webhookId": "d3b39a58-f373-5157-8d12-7cd539850a15"
+    },
+    {
+      "id": "7a2ea1da-50df-563e-896f-1f800167a0ec",
+      "name": "Formular: Antwort",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4e71632b-54ed-548b-ace9-01f5b9867a26",
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "answered",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "answered"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "aee9499e-7fb8-5711-8ac9-f61dc08ab208",
+                    "leftValue": "={{ $json.decision }}",
+                    "rightValue": "timeout",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "timeout"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d1",
+      "name": "Fertig melden",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -80
+      ],
+      "parameters": {
+        "operation": "complete",
+        "resultSource": "json",
+        "resultJson": "={{ JSON.stringify({ rows: $json.answers.keywords.concat($json.answers.extra ? [$json.answers.extra] : []).map(k => ({ keyword: k })) }) }}",
+        "message": "Keywords übernommen",
+        "options": {
+          "resultTitle": "Gewählte Keywords",
+          "resultType": "list"
+        }
+      }
+    },
+    {
+      "id": "f1",
+      "name": "Keine Antwort",
+      "type": "@cleverflows/n8n-nodes-cleverflows.cleverflows",
+      "typeVersion": 1,
+      "position": [
+        760,
+        120
+      ],
+      "parameters": {
+        "operation": "fail",
+        "message": "Formular nicht beantwortet",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cleverflows Trigger": {
+      "main": [
+        [
+          {
+            "node": "Formular",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formular": {
+      "main": [
+        [
+          {
+            "node": "Formular: Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formular: Antwort": {
+      "main": [
+        [
+          {
+            "node": "Fertig melden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
