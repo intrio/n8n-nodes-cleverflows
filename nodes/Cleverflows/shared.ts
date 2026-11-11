@@ -280,6 +280,8 @@ export interface WaitInput {
 	/** Workflow: checkpoint key, unique per step (e.g. draft_review) */
 	checkpointKey?: string;
 	expiresInMinutes?: number;
+	/** Workflow: how long the Wait node waits at most; Cleverflows closes the review no later than that */
+	waitTimeoutMinutes?: number;
 	/** Agent approval: action key (policy in Cleverflows decides) */
 	actionKey?: string;
 	actionLabel?: string;
@@ -294,8 +296,14 @@ export interface WaitInput {
 }
 
 /** Callback that opens a review / approval / question and names the URL to resume on. */
+/** Checkpoint keys Cleverflows assigns itself (review of finished results); a flow must not use them. */
+export const RESERVED_CHECKPOINT_KEYS = ['result_review'];
+
 export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: WaitFor, resumeUrl: string, input: WaitInput): CallbackRequest {
 	const c = requireContext(cf);
+	if (input.checkpointKey && RESERVED_CHECKPOINT_KEYS.includes(input.checkpointKey.trim().toLowerCase())) {
+		throw new Error(`The checkpoint key "${input.checkpointKey}" is reserved by Cleverflows (${RESERVED_CHECKPOINT_KEYS.join(', ')}). Use your own key, e.g. draft_review.`);
+	}
 	if (waitFor === 'form' && (!input.form || !Array.isArray((input.form as Obj).fields) || ((input.form as Obj).fields as unknown[]).length === 0)) {
 		throw new Error('The form needs at least one field in "fields".');
 	}
@@ -312,6 +320,7 @@ export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: Wait
 				checkpointForm: input.form,
 				resumeWebhookUrl: resumeUrl,
 				...(input.expiresInMinutes != null ? { checkpointExpiresInMinutes: input.expiresInMinutes } : {}),
+				...(input.waitTimeoutMinutes ? { waitTimeoutMinutes: input.waitTimeoutMinutes } : {}),
 			},
 			input.executionId,
 		);
@@ -328,6 +337,7 @@ export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: Wait
 				checkpointPayload: input.payload ?? {},
 				resumeWebhookUrl: resumeUrl,
 				...(input.expiresInMinutes != null ? { checkpointExpiresInMinutes: input.expiresInMinutes } : {}),
+				...(input.waitTimeoutMinutes ? { waitTimeoutMinutes: input.waitTimeoutMinutes } : {}),
 			},
 			input.executionId,
 		);

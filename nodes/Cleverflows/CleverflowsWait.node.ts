@@ -158,7 +158,7 @@ export class CleverflowsWait implements INodeType {
 				type: 'boolean',
 				default: true,
 				description:
-					'Whether to stop waiting after a while and continue with decision "timeout". Cleverflows also expires open requests (reviews after 24 h by default).',
+					'Whether to stop waiting after a while and continue with decision "timeout". Cleverflows closes an open review no later than this wait time (without a limit: after 7 days by default).',
 			},
 			{
 				displayName: 'Max Wait (Hours)',
@@ -179,8 +179,8 @@ export class CleverflowsWait implements INodeType {
 						displayName: 'Review Expires After (Minutes, Workflow)',
 						name: 'expiresInMinutes',
 						type: 'number',
-						default: 1440,
-						description: '0 = never. Overrides the default of the workflow.',
+						default: 10080,
+						description: '0 = never. Overrides the default of the workflow. Never longer than Max Wait.',
 					},
 					{
 						displayName: 'Action Label (Agent)',
@@ -239,6 +239,8 @@ export class CleverflowsWait implements INodeType {
 		const cf = readContext(this, 0, item);
 		const options = this.getNodeParameter('options', 0, {}) as IDataObject;
 		const resumeUrl = this.evaluateExpression('{{ $execution.resumeUrl }}', 0) as string;
+		const limit = this.getNodeParameter('limitWaitTime', 0) as boolean;
+		const maxHours = limit ? (this.getNodeParameter('maxHours', 0) as number) : 0;
 
 		const req = buildWaitRequest(cf, waitFor, resumeUrl, {
 			title: this.getNodeParameter('title', 0) as string,
@@ -256,6 +258,7 @@ export class CleverflowsWait implements INodeType {
 			inputFields:
 				waitFor === 'question' ? (parseJsonParam(this, this.getNodeParameter('inputFields', 0), 'Input Fields', 0) as unknown[]) : undefined,
 			expiresInMinutes: options.expiresInMinutes as number | undefined,
+			waitTimeoutMinutes: maxHours > 0 ? Math.round(maxHours * 60) : undefined,
 			resultType: options.resultType as string | undefined,
 			memory: options.memory ? (parseJsonParam(this, options.memory, 'Memory', 0) as unknown[]) : undefined,
 			executionId: this.getExecutionId(),
@@ -271,9 +274,8 @@ export class CleverflowsWait implements INodeType {
 			});
 		}
 
-		const limit = this.getNodeParameter('limitWaitTime', 0) as boolean;
 		const waitTill = limit
-			? new Date(Date.now() + (this.getNodeParameter('maxHours', 0) as number) * 3600_000)
+			? new Date(Date.now() + maxHours * 3600_000)
 			: WAIT_INDEFINITELY;
 		await this.putExecutionToWait(waitTill);
 		// Only used when the wait time runs out without an answer

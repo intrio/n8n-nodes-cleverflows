@@ -108,6 +108,12 @@ test('builds wait requests', () => {
 	assert.equal(cp.body.resumeWebhookUrl, 'https://n8n.test/webhook-waiting/9?signature=s');
 	assert.equal(cp.body.checkpointExpiresInMinutes, 0);
 	assert.throws(() => s.buildWaitRequest(run, 'question', 'u', { title: 'Q' }), /support "Review" and "Form"/);
+	assert.equal(cp.body.waitTimeoutMinutes, undefined);
+	// Wait time of the node goes along, Cleverflows closes the review no later than that
+	assert.equal(s.buildWaitRequest(run, 'review', 'u', { title: 'Check', checkpointKey: 'draft', waitTimeoutMinutes: 10080 }).body.waitTimeoutMinutes, 10080);
+	// Reserved keys are refused before anything is sent
+	assert.throws(() => s.buildWaitRequest(run, 'review', 'u', { title: 'Check', checkpointKey: 'result_review' }), /reserved/);
+	assert.throws(() => s.buildWaitRequest(run, 'form', 'u', { title: 'F', checkpointKey: ' Result_Review ', form: { fields: [{ key: 'a', type: 'text' }] } }), /reserved/);
 
 	const task = s.extractContext(taskStart);
 	const ap = s.buildWaitRequest(task, 'approval', 'u', { title: 'Publish?', actionKey: 'publish', payload: { a: 1 } });

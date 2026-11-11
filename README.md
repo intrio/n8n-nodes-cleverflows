@@ -37,6 +37,12 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 
 *Complete* in a workflow run can hand entries to the follow-up workflow set in Cleverflows (e.g. topics from a planning run to a blog post workflow). Set *Options → Records* to an array like `[{"table": "handoff", "values": {"topic": "…", "description": "…"}}]`. The entries arrive in the input table of the follow-up workflow with status *In review* and need an approval there. Agents keep using *Records* for the tables granted to them.
 
+## Review deadline and reserved keys (0.1.8)
+
+- Cleverflows Wait sends its wait time (Max Wait) along. Cleverflows closes an open review no later than that, so a review never stays open after the waiting execution is gone. Without a limit, reviews expire after 7 days by default (the same as the default Max Wait of 168 h).
+- The checkpoint key `result_review` is reserved: Cleverflows uses it for the review of finished results and does not resume the flow for it. The node refuses it before anything is sent, Cleverflows answers it with 400 (`CHECKPOINT_KEY_RESERVED`).
+- A `cancelled` or `failed` report while a review is open ends the run and closes the review.
+
 ## Upgrading to 0.1.5
 
 **Breaking change:** Cleverflows Wait now has **one** output instead of four (Approved, Revise, Rejected, Timed Out). Older n8n versions (e.g. 2.9) only pass the answer to the first output, so the other branches were lost silently.
