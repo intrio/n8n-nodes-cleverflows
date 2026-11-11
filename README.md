@@ -30,8 +30,12 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 
 - Field types: `text`, `textarea`, `number`, `date` (YYYY-MM-DD), `select`, `multiselect`, `boolean`, `url`, `file`.
 - Per field: `key`, `label`, `type`, `required`, `options` (text or `{value,label}`), `placeholder`, `help`, `default`, `min`/`max` (number, date, number of choices), `minLength`/`maxLength` (text), `accept`/`maxSizeMb` (file, up to 25 MB; PDF, PNG, JPG, GIF, WebP, TXT, CSV, Word, Excel, PowerPoint).
-- Per form: `title`, `description`, `submitLabel`, `recipient` (`customer` = people of the organization, default; `agency` = only the agency), `expiresInMinutes`, `remindAfterMinutes`.
+- Per form: `title`, `description`, `submitLabel`, `recipient` (`customer` = people of the organization, default; `agency` = only the agency), `expiresInMinutes`, `remindAfterMinutes`, optional `i18n` with translations per language (`de`, `en`, `es`, `fr`: `title`, `description`, `submitLabel`, `fields.<key>.{label, help, placeholder, options}`); everyone sees the form in their own language.
 - The answer continues with `decision: "answered"` and `answers` (one entry per field key, empty optional fields are `null`; files as `{ name, size, type, url }` with a download link valid for 7 days). In workflow runs the form can also be declined: the flow continues with `decision: "rejected"` and `feedback`, and Cleverflows ends the run.
+
+## Follow-up workflow records (0.1.7)
+
+*Complete* in a workflow run can hand entries to the follow-up workflow set in Cleverflows (e.g. topics from a planning run to a blog post workflow). Set *Options → Records* to an array like `[{"table": "handoff", "values": {"topic": "…", "description": "…"}}]`. The entries arrive in the input table of the follow-up workflow with status *In review* and need an approval there. Agents keep using *Records* for the tables granted to them.
 
 ## Upgrading to 0.1.5
 

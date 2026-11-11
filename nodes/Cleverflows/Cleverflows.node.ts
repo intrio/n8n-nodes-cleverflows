@@ -128,11 +128,12 @@ export class Cleverflows implements INodeType {
 							'Observations or learned rules, e.g. [{"key":"tone","kind":"observation","summary":"…"}]. "key" is required; learned rules (kind learned_rule) arrive as suggestions.',
 					},
 					{
-						displayName: 'Records (Agent)',
+						displayName: 'Records',
 						name: 'records',
 						type: 'json',
 						default: '[]',
-						description: 'Records for tables granted to the agent; they arrive for approval',
+						description:
+							'Agents: records for tables granted to the agent. Workflow runs (Complete): entries for the follow-up workflow, e.g. [{"table":"handoff","values":{"topic":"…"}}]. Both arrive for approval.',
 					},
 					{
 						displayName: 'Result Summary (Agent)',

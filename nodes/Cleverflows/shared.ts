@@ -217,7 +217,17 @@ export function buildReport(cf: CfContext | null | undefined, op: ReportOperatio
 			case 'progress':
 				return null;
 			case 'complete':
-				return baseRequest(c, { status: 'completed', message, outputValues: input.values ?? {} }, input.executionId);
+				return baseRequest(
+					c,
+					{
+						status: 'completed',
+						message,
+						outputValues: input.values ?? {},
+						// Entries for the follow-up workflow, e.g. [{ table: 'handoff', values: {…} }]
+						...(input.records && input.records.length ? { records: input.records } : {}),
+					},
+					input.executionId,
+				);
 			case 'fail':
 				return baseRequest(c, { status: 'failed', message: message ?? 'Failed', errorDetails: input.errorDetails }, input.executionId);
 			case 'cancel':

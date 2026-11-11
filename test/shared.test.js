@@ -80,6 +80,9 @@ test('builds workflow reports', () => {
 	assert.equal(s.buildReport(cf, 'progress', { progress: 10 }), null);
 	assert.equal(s.buildReport(cf, 'fail', { errorDetails: 'x' }).body.status, 'failed');
 	assert.equal(s.buildReport(cf, 'cancel', {}).body.status, 'cancelled');
+	const handoff = s.buildReport(cf, 'complete', { values: { title: 'T' }, records: [{ table: 'handoff', values: { topic: 'A' } }] });
+	assert.deepEqual(handoff.body.records, [{ table: 'handoff', values: { topic: 'A' } }]);
+	assert.equal('records' in s.buildReport(cf, 'complete', { values: {}, records: [] }).body, false);
 });
 
 test('builds agent reports', () => {
