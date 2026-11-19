@@ -29,6 +29,14 @@ const isObj = (v: unknown): v is Obj => Boolean(v) && typeof v === 'object' && !
 const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
+/**
+ * Connection test from Cleverflows (Connections → Automation sends `{ test: true }`).
+ * Only a body without run or task data counts, so a real start is never swallowed.
+ */
+export function isTestPing(body: Obj): boolean {
+	return body.test === true && detectKind(body) === null;
+}
+
 /** Detects whether a body (start or resume) belongs to a workflow run or an agent task. */
 export function detectKind(body: Obj): CfKind | null {
 	const kind = str(body.kind);

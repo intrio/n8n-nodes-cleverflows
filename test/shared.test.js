@@ -161,3 +161,12 @@ test('resume body yields a fresh context', () => {
 	assert.equal(cf.kind, 'workflow_run');
 	assert.equal(cf.callbackToken, 'tok2');
 });
+
+test('connection test ping is recognised, real starts are not', () => {
+	assert.equal(s.isTestPing({ test: true, source: 'cleverflows' }), true);
+	assert.equal(s.isTestPing({ test: true }), true);
+	assert.equal(s.isTestPing({ test: 'true' }), false);
+	assert.equal(s.isTestPing({}), false);
+	assert.equal(s.isTestPing({ ...runStart, test: true }), false);
+	assert.equal(s.isTestPing({ ...taskStart, test: true }), false);
+});

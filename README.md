@@ -37,6 +37,10 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 
 *Complete* in a workflow run can hand entries to the follow-up workflow set in Cleverflows (e.g. topics from a planning run to a blog post workflow). Set *Options → Records* to an array like `[{"table": "handoff", "values": {"topic": "…", "description": "…"}}]`. The entries arrive in the input table of the follow-up workflow with status *In review* and need an approval there. Agents keep using *Records* for the tables granted to them.
 
+## Connection test (0.1.9)
+
+- The test under Connections → Automation in Cleverflows (`{ "test": true }`) is answered by the Cleverflows Trigger with 200 `{ "ok": true, "test": true }` once the token is accepted. No execution starts. Cleverflows shows "authentication confirmed". A wrong token still gets 401.
+
 ## Review deadline and reserved keys (0.1.8)
 
 - Cleverflows Wait sends its wait time (Max Wait) along. Cleverflows closes an open review no later than that, so a review never stays open after the waiting execution is gone. Without a limit, reviews expire after 7 days by default (the same as the default Max Wait of 168 h).

@@ -6,7 +6,7 @@ import type {
 	IWebhookResponseData,
 } from 'n8n-workflow';
 import { NodeConnectionTypes } from 'n8n-workflow';
-import { checkAuth, detectKind, normalizeStart } from './shared';
+import { checkAuth, detectKind, isTestPing, normalizeStart } from './shared';
 
 export class CleverflowsTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -106,6 +106,11 @@ export class CleverflowsTrigger implements INodeType {
 			return { noWebhookResponse: true };
 		}
 		const body = this.getBodyData() as IDataObject;
+		if (isTestPing(body)) {
+			// Connection test: reached and signed in, but no execution is started
+			res.status(200).json({ ok: true, test: true });
+			return { noWebhookResponse: true };
+		}
 		const kind = detectKind(body);
 		if (!kind) {
 			res.status(400).json({ error: 'Not a Cleverflows run or task' });
