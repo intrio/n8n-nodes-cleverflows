@@ -176,17 +176,24 @@ export class CleverflowsWait implements INodeType {
 				default: {},
 				options: [
 					{
-						displayName: 'Review Expires After (Minutes, Workflow)',
-						name: 'expiresInMinutes',
-						type: 'number',
-						default: 10080,
-						description: '0 = never. Overrides the default of the workflow. Never longer than Max Wait.',
-					},
-					{
 						displayName: 'Action Label (Agent)',
 						name: 'actionLabel',
 						type: 'string',
 						default: '',
+					},
+					{
+						displayName: 'Knowledge',
+						name: 'knowledge',
+						type: 'json',
+						default: '[]',
+						description:
+							'Organization knowledge for workflow runs and agents, e.g. [{"title":"Tone of voice","content":"…","tags":["ton"]}]. Same title (and tags) updates the entry. Arrives as a suggestion; it takes effect once the agency accepts it.',
+					},
+					{
+						displayName: 'Memory (Agent)',
+						name: 'memory',
+						type: 'json',
+						default: '[]',
 					},
 					{
 						displayName: 'Result Type (Agent Review)',
@@ -200,10 +207,11 @@ export class CleverflowsWait implements INodeType {
 						default: 'content',
 					},
 					{
-						displayName: 'Memory (Agent)',
-						name: 'memory',
-						type: 'json',
-						default: '[]',
+						displayName: 'Review Expires After (Minutes, Workflow)',
+						name: 'expiresInMinutes',
+						type: 'number',
+						default: 10080,
+						description: '0 = never. Overrides the default of the workflow. Never longer than Max Wait.',
 					},
 				],
 			},
@@ -261,6 +269,7 @@ export class CleverflowsWait implements INodeType {
 			waitTimeoutMinutes: maxHours > 0 ? Math.round(maxHours * 60) : undefined,
 			resultType: options.resultType as string | undefined,
 			memory: options.memory ? (parseJsonParam(this, options.memory, 'Memory', 0) as unknown[]) : undefined,
+			knowledge: options.knowledge ? (parseJsonParam(this, options.knowledge, 'Knowledge', 0) as unknown[]) : undefined,
 			executionId: this.getExecutionId(),
 		});
 		const response = (await sendCallback(this, req, 0)) as IDataObject;

@@ -1,5 +1,7 @@
 # @cleverflows/n8n-nodes-cleverflows
 
+> Published from the public repository https://github.com/intrio/n8n-nodes-cleverflows. This copy is used for the end-to-end tests of Cleverflows; change both together.
+
 Building block for connecting n8n flows to Cleverflows without hand-built webhooks, HTTP callbacks or resume webhooks. It implements the Cleverflows automation contract (protocol v1), described in the Cleverflows help under *Set up workflows* and *Set up agents*.
 
 | Node | What it does |
@@ -32,6 +34,10 @@ Building block for connecting n8n flows to Cleverflows without hand-built webhoo
 - Per field: `key`, `label`, `type`, `required`, `options` (text or `{value,label}`), `placeholder`, `help`, `default`, `min`/`max` (number, date, number of choices), `minLength`/`maxLength` (text), `accept`/`maxSizeMb` (file, up to 25 MB; PDF, PNG, JPG, GIF, WebP, TXT, CSV, Word, Excel, PowerPoint).
 - Per form: `title`, `description`, `submitLabel`, `recipient` (`customer` = people of the organization, default; `agency` = only the agency), `expiresInMinutes`, `remindAfterMinutes`, optional `i18n` with translations per language (`de`, `en`, `es`, `fr`: `title`, `description`, `submitLabel`, `fields.<key>.{label, help, placeholder, options}`); everyone sees the form in their own language.
 - The answer continues with `decision: "answered"` and `answers` (one entry per field key, empty optional fields are `null`; files as `{ name, size, type, url }` with a download link valid for 7 days). In workflow runs the form can also be declined: the flow continues with `decision: "rejected"` and `feedback`, and Cleverflows ends the run.
+
+## Knowledge and memory (0.1.10)
+
+*Options → Knowledge* on *Cleverflows* and *Cleverflows Wait* sends organization knowledge, in workflow runs and agent tasks: `[{"title": "Tone of voice", "content": "Friendly, no jargon", "tags": ["ton"]}]`. An entry with the same title (and, if given, the same tags) is updated instead of duplicated. *Memory (Agent)* stays per agent. Both arrive in Cleverflows as suggestions: they only reach flows once the agency accepts them under *Suggestions*; the agency is notified (bell, email, Slack/Teams).
 
 ## Follow-up workflow records (0.1.7)
 

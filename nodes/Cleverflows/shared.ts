@@ -181,6 +181,8 @@ export interface ReportInput {
 	errorDetails?: string;
 	memory?: unknown[];
 	records?: unknown[];
+	/** Organization knowledge (workflow runs and agents); arrives as a suggestion */
+	knowledge?: unknown[];
 	executionId?: string | number | null;
 }
 
@@ -211,7 +213,12 @@ function baseRequest(cf: CfContext, body: Obj, executionId?: string | number | n
 const extras = (input: ReportInput): Obj => ({
 	...(input.memory && input.memory.length ? { memory: input.memory } : {}),
 	...(input.records && input.records.length ? { records: input.records } : {}),
+	...(input.knowledge && input.knowledge.length ? { knowledge: input.knowledge } : {}),
 });
+
+/** Knowledge travels with every workflow callback too (0.1.10). */
+const knowledgeOf = (input: { knowledge?: unknown[] }): Obj =>
+	input.knowledge && input.knowledge.length ? { knowledge: input.knowledge } : {};
 
 /**
  * Builds the callback for a report. Returns null when the operation does not
@@ -233,13 +240,14 @@ export function buildReport(cf: CfContext | null | undefined, op: ReportOperatio
 						outputValues: input.values ?? {},
 						// Entries for the follow-up workflow, e.g. [{ table: 'handoff', values: {…} }]
 						...(input.records && input.records.length ? { records: input.records } : {}),
+						...knowledgeOf(input),
 					},
 					input.executionId,
 				);
 			case 'fail':
-				return baseRequest(c, { status: 'failed', message: message ?? 'Failed', errorDetails: input.errorDetails }, input.executionId);
+				return baseRequest(c, { status: 'failed', message: message ?? 'Failed', errorDetails: input.errorDetails, ...knowledgeOf(input) }, input.executionId);
 			case 'cancel':
-				return baseRequest(c, { status: 'cancelled', message }, input.executionId);
+				return baseRequest(c, { status: 'cancelled', message, ...knowledgeOf(input) }, input.executionId);
 		}
 	}
 	switch (op) {
@@ -300,6 +308,8 @@ export interface WaitInput {
 	resultType?: string;
 	resultSummary?: string;
 	memory?: unknown[];
+	/** Organization knowledge (workflow runs and agents); arrives as a suggestion */
+	knowledge?: unknown[];
 	executionId?: string | number | null;
 }
 
@@ -329,6 +339,7 @@ export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: Wait
 				resumeWebhookUrl: resumeUrl,
 				...(input.expiresInMinutes != null ? { checkpointExpiresInMinutes: input.expiresInMinutes } : {}),
 				...(input.waitTimeoutMinutes ? { waitTimeoutMinutes: input.waitTimeoutMinutes } : {}),
+				...knowledgeOf(input),
 			},
 			input.executionId,
 		);
@@ -346,6 +357,7 @@ export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: Wait
 				resumeWebhookUrl: resumeUrl,
 				...(input.expiresInMinutes != null ? { checkpointExpiresInMinutes: input.expiresInMinutes } : {}),
 				...(input.waitTimeoutMinutes ? { waitTimeoutMinutes: input.waitTimeoutMinutes } : {}),
+				...knowledgeOf(input),
 			},
 			input.executionId,
 		);
@@ -354,7 +366,7 @@ export function buildWaitRequest(cf: CfContext | null | undefined, waitFor: Wait
 		title: input.title,
 		description: input.description || undefined,
 		resumeWebhookUrl: resumeUrl,
-		...extras({ memory: input.memory }),
+		...extras({ memory: input.memory, knowledge: input.knowledge }),
 	};
 	if (waitFor === 'question') {
 		return baseRequest(c, { type: 'question', ...common, inputFields: input.inputFields ?? [] }, input.executionId);

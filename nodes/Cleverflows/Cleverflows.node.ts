@@ -120,12 +120,20 @@ export class Cleverflows implements INodeType {
 				default: {},
 				options: [
 					{
+						displayName: 'Knowledge',
+						name: 'knowledge',
+						type: 'json',
+						default: '[]',
+						description:
+							'Organization knowledge for workflow runs and agents, e.g. [{"title":"Tone of voice","content":"…","tags":["ton"]}]. Same title (and tags) updates the entry. Arrives as a suggestion; it takes effect once the agency accepts it.',
+					},
+					{
 						displayName: 'Memory (Agent)',
 						name: 'memory',
 						type: 'json',
 						default: '[]',
 						description:
-							'Observations or learned rules, e.g. [{"key":"tone","kind":"observation","summary":"…"}]. "key" is required; learned rules (kind learned_rule) arrive as suggestions.',
+							'Observations or learned rules, e.g. [{"key":"tone","kind":"observation","summary":"…"}]. "key" is required; both arrive as suggestions the agency accepts.',
 					},
 					{
 						displayName: 'Records',
@@ -194,6 +202,7 @@ export class Cleverflows implements INodeType {
 					resultSummary: options.resultSummary as string | undefined,
 					resultType: options.resultType as string | undefined,
 					memory: options.memory ? (parseJsonParam(this, options.memory, 'Memory', i) as unknown[]) : undefined,
+					knowledge: options.knowledge ? (parseJsonParam(this, options.knowledge, 'Knowledge', i) as unknown[]) : undefined,
 					records: options.records ? (parseJsonParam(this, options.records, 'Records', i) as unknown[]) : undefined,
 					executionId,
 				});

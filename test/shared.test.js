@@ -83,6 +83,12 @@ test('builds workflow reports', () => {
 	const handoff = s.buildReport(cf, 'complete', { values: { title: 'T' }, records: [{ table: 'handoff', values: { topic: 'A' } }] });
 	assert.deepEqual(handoff.body.records, [{ table: 'handoff', values: { topic: 'A' } }]);
 	assert.equal('records' in s.buildReport(cf, 'complete', { values: {}, records: [] }).body, false);
+	// 0.1.10: knowledge in every workflow callback, as a suggestion for the agency
+	const kn = [{ title: 'Tone', content: 'Friendly', tags: ['ton'] }];
+	assert.deepEqual(s.buildReport(cf, 'complete', { values: {}, knowledge: kn }).body.knowledge, kn);
+	assert.deepEqual(s.buildReport(cf, 'fail', { knowledge: kn }).body.knowledge, kn);
+	assert.equal('knowledge' in s.buildReport(cf, 'complete', { values: {}, knowledge: [] }).body, false);
+	assert.deepEqual(s.buildWaitRequest(cf, 'review', 'https://n8n/resume', { title: 'R', knowledge: kn }).body.knowledge, kn);
 });
 
 test('builds agent reports', () => {
@@ -93,6 +99,8 @@ test('builds agent reports', () => {
 	assert.equal(d.body.type, 'done');
 	assert.deepEqual(d.body.result, { type: 'list', title: 'Audit', summary: undefined, content: { rows: [] } });
 	assert.equal(s.buildReport(cf, 'cancel', { message: 'nothing to do' }).body.title, 'nothing to do');
+	const kn = [{ title: 'Tone', content: 'Friendly' }];
+	assert.deepEqual(s.buildReport(cf, 'progress', { progress: 5, knowledge: kn }).body.knowledge, kn);
 });
 
 test('rejects missing context', () => {
